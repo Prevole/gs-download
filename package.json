@@ -1,0 +1,23 @@
+{
+  "name": "gs-download",
+  "version": "0.0.1",
+  "description": "Donwloader of Genius Scan PDFs files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "gs-download": "bin/gs-download"
+  }
+  "keywords": [
+    "genius",
+    "scan",
+    "download"
+  ],
+  "author": "Prevole",
+  "license": "MIT",
+  "dependencies": {
+    "command-line-args": "^3.0.5",
+    "request": "^2.79.0"
+  }
+}
