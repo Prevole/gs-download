@@ -26,9 +26,6 @@ console.log(baseUrl);
 
 function download(target, files, idx) {
     request(baseUrl + '/' + files[idx])
-        .on('start', function() {
-            console.log('Start to download file: ' + files[idx]);
-        })
         .on('end', function() {
             console.log('Download completed for file: ' + files[idx]);
             if (idx < files.length - 1) {
