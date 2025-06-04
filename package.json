@@ -1,13 +1,20 @@
 {
   "name": "gs-download",
   "version": "0.0.1",
-  "description": "Donwloader of Genius Scan PDFs files",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "Downloader of Genius Scan PDFs files",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "gs-download": "bin/gs-download"
+    "gs-download": "dist/bin/download.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
   },
   "keywords": [
     "genius",
@@ -17,8 +24,23 @@
   "author": "Prevole",
   "license": "MIT",
   "dependencies": {
-    "command-line-args": "^3.0.5",
-    "lodash": "^4.17.4",
-    "request": "^2.79.0"
+    "command-line-args": "^6.0.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/command-line-args": "^5.2.3",
+    "@types/mock-fs": "^4.13.4",
+    "@types/node": "^24.0.1",
+    "@types/request": "^2.48.12",
+    "@types/winston": "^2.4.4",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "@vitest/coverage-istanbul": "^3.2.3",
+    "eslint": "^9.28.0",
+    "eslint-plugin-import": "^2.29.1",
+    "mock-fs": "^5.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
   }
 }
