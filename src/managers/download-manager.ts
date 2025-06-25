@@ -1,8 +1,14 @@
-import { FileInfo } from '../models/file-info.model.js';
-import downloadService from '../services/download.service.js';
+import FileInfo from '../models/file-info.model.js';
+import DownloadService from '../services/download.service.js';
 import logger from '../utils/logger.js';
+import ProgressManager from './progress-manager.js';
 
-export class DownloadManager {
+export default class DownloadManager {
+  constructor(
+    private progressManager: ProgressManager,
+    private downloadService: DownloadService
+  ) {}
+
   async downloadFilesFromJson(jsonFileUrl: string, baseUrl: string, outputDir = '.'): Promise<string[]> {
     if (!jsonFileUrl) {
       const error = new Error('JSON file URL is required');
@@ -21,7 +27,7 @@ export class DownloadManager {
     logger.info(`Files will be saved to: ${outputDir}`);
 
     try {
-      const fileList: FileInfo[] = await downloadService.retrieveFileList(jsonFileUrl);
+      const fileList: FileInfo[] = await this.downloadService.retrieveFileList(jsonFileUrl);
       logger.info(`Retrieved ${fileList.length} files from JSON`);
 
       if (fileList.length === 0) {
@@ -29,18 +35,27 @@ export class DownloadManager {
         return [];
       }
 
+      this.progressManager.create('Total', fileList.length);
+
       const downloadedFiles: string[] = [];
-      for (const fileInfo of fileList) {
-        logger.info(`Processing file: ${fileInfo.name} (${fileInfo.uid})`);
+
+      for (let i = 0; i < fileList.length; i++) {
+        const fileInfo = fileList[i];
+        logger.info(`Processing file: ${fileInfo?.name} (${fileInfo?.uid})`);
         try {
-          const filePath = await downloadService.downloadFile(fileInfo, baseUrl, outputDir);
+          const filePath = await this.downloadService.downloadFile(fileInfo!, baseUrl, outputDir);
           downloadedFiles.push(filePath);
-          logger.info(`Successfully downloaded: ${fileInfo.name}`);
+
+          logger.info(`Successfully downloaded: ${fileInfo?.name}`);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error(`Failed to download file ${fileInfo.name}: ${errorMessage}`);
+          logger.error(`Failed to download file ${fileInfo?.name}: ${errorMessage}`);
+        } finally {
+          this.progressManager.update('Total');
         }
       }
+
+      this.progressManager.stop();
 
       logger.info(`Download process completed. Successfully downloaded ${downloadedFiles.length} of ${fileList.length} files`);
       return downloadedFiles;
@@ -51,5 +66,3 @@ export class DownloadManager {
     }
   }
 }
-
-export default new DownloadManager();

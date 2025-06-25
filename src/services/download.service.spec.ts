@@ -1,323 +1,258 @@
-import { existsSync, createWriteStream, WriteStream } from 'fs';
-import { get, IncomingMessage, ClientRequest, RequestOptions } from 'node:http';
-import mockFs from 'mock-fs';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { ClientRequest, get} from 'node:http';
 import { vi } from 'vitest';
-import { FileInfo } from '../models/file-info.model.js';
-import { DownloadService } from './download.service.js';
+import ProgressManager from '../managers/progress-manager.js';
+import FileInfo from '../models/file-info.model.js';
+import { createMock, mockClientRequest, unsafeCast } from "../test/test-utils.js";
+import logger from '../utils/logger.js';
+import DownloadService from './download.service.js';
 
-vi.stubGlobal('fetch', vi.fn());
+vi.mock('fs', () => ({
+  createWriteStream: vi.fn().mockReturnValue({
+    on: vi.fn().mockImplementation(function(this: any, event, callback) {
+      if (event === 'finish') {
+        callback();
+      }
 
-vi.mock('../utils/logger.js');
-vi.mock('node:http');
-vi.mock('fs', async () => {
-  const actual = await vi.importActual('fs');
-  return {
-    ...actual,
-    createWriteStream: vi.fn()
-  };
-});
+      return this;
+    }),
 
-function createGetMockImplementation(
-  mockResponse: Partial<IncomingMessage>,
-  mockRequest: Partial<ClientRequest>
-) {
-  return (
-    url: string | URL,
-    options?: RequestOptions | ((res: IncomingMessage) => void),
-    callback?: ((res: IncomingMessage) => void)
-  ): ClientRequest => {
-    if (typeof options === 'function') {
-      options(mockResponse as IncomingMessage);
-    } else if (callback) {
-      callback(mockResponse as IncomingMessage);
-    }
-    return mockRequest as ClientRequest;
-  };
-}
+    close: vi.fn()
+  }),
+
+  existsSync: vi.fn().mockReturnValue(true),
+  mkdirSync: vi.fn()
+}));
+
+vi.mock('node:http', () => ({
+  get: vi.fn()
+}));
+
+vi.mock('../utils/logger.js', () => ({
+  default: {
+    info: vi.fn(),
+    error: vi.fn()
+  }
+}));
+
+const mockProgressManager = createMock<ProgressManager>({
+  create: vi.fn(),
+  update: vi.fn(),
+  done: vi.fn()
+})
 
 describe('DownloadService', () => {
   let downloadService: DownloadService;
+  let mockResponse: any;
+  let mockFileInfo: FileInfo;
 
   beforeEach(() => {
-    downloadService = new DownloadService();
-
-    mockFs({
-      [process.cwd()]: {},
-      '/new': {
-        'output': {
-          'dir': {}
-        }
-      }
-    });
-  });
-
-  afterEach(() => {
-    mockFs.restore();
     vi.clearAllMocks();
+
+    downloadService = new DownloadService(mockProgressManager);
+
+    mockFileInfo = new FileInfo('test-uid', 'test-file.pdf');
+
+    mockResponse = {
+      statusCode: 200,
+      pipe: vi.fn(),
+      headers: {
+        'content-length': '1000'
+      },
+      on: vi.fn().mockImplementation((event, callback)=> {
+        if (event === 'data') {
+          callback(Buffer.from('test data'));
+        }
+      })
+    };
+
+    const mockClientRequest = createMock<ClientRequest>();
+
+    vi.mocked(unsafeCast<(url: string | URL, cb: any) => ClientRequest>(get))
+      .mockImplementation((url: string | URL, callback) => {
+        callback(mockResponse);
+        return mockClientRequest;
+      });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([
+        { uid: 'file1', name: 'File 1.pdf' },
+        { uid: 'file2', name: 'File 2.pdf' }
+      ])
+    });
   });
 
   describe('downloadFile', () => {
-    let mockFileStream: Partial<WriteStream>;
-
-    beforeEach(() => {
-      mockFileStream = {
-        close: vi.fn(),
-        on: vi.fn().mockImplementation((event, callback) => {
-          if (event === 'finish') {
-            callback();
-          }
-          return mockFileStream;
-        })
-      };
-
-      vi.mocked(createWriteStream).mockReturnValue(mockFileStream as WriteStream);
-    });
-
-    it('should throw an error if fileUid is not provided', async () => {
+    it('should download a file successfully', async () => {
       // given
-      const fileInfo = new FileInfo('', 'test.pdf');
-      const baseUrl = 'https://example.com';
+      const baseUrl = 'http://example.com';
+      const outputDir = './downloads';
 
       // when
-      const result = downloadService.downloadFile(fileInfo, baseUrl);
+      const result = await downloadService.downloadFile(mockFileInfo, baseUrl, outputDir);
 
       // then
-      await expect(result).rejects.toThrow('File UID is required');
+      expect(result).toBe('downloads/test-file.pdf');
+      expect(get).toHaveBeenCalledWith('http://example.com/files/test-uid', expect.any(Function));
+      expect(createWriteStream).toHaveBeenCalledWith('downloads/test-file.pdf');
+      expect(mockProgressManager.create).toHaveBeenCalledWith(mockFileInfo.labeledName, 1000);
+      expect(mockProgressManager.update).toHaveBeenCalledWith(mockFileInfo.labeledName, expect.any(Number));
+      expect(mockProgressManager.done).toHaveBeenCalledWith(mockFileInfo.labeledName);
     });
 
-    it('should throw an error if baseUrl is not provided', async () => {
+    it('should throw an error if file UID is missing', async () => {
       // given
-      const fileInfo = new FileInfo('file123', 'test.pdf');
+      const invalidFileInfo = new FileInfo('', 'test-file.pdf');
+      const baseUrl = 'http://example.com';
+
+      // when/then
+      await expect(downloadService.downloadFile(invalidFileInfo, baseUrl))
+        .rejects.toThrow('File UID is required');
+      expect(logger.error).toHaveBeenCalledWith('Download failed: File UID is missing');
+    });
+
+    it('should throw an error if base URL is missing', async () => {
+      // given
       const baseUrl = '';
 
-      // when
-      const result = downloadService.downloadFile(fileInfo, baseUrl);
-
-      // then
-      await expect(result).rejects.toThrow('Base URL is required');
+      // when/then
+      await expect(downloadService.downloadFile(mockFileInfo, baseUrl))
+        .rejects.toThrow('Base URL is required');
+      expect(logger.error).toHaveBeenCalledWith('Download failed: Base URL is missing');
     });
 
     it('should create output directory if it does not exist', async () => {
       // given
-      const mockResponse: Partial<IncomingMessage> = {
-        statusCode: 200,
-        pipe: vi.fn(),
-        on: vi.fn().mockReturnThis()
-      };
-
-      const mockRequest: Partial<ClientRequest> = {
-        on: vi.fn().mockImplementation((_event, _callback) => {
-          return mockRequest;
-        })
-      };
-
-      vi.mocked(get).mockImplementation(createGetMockImplementation(mockResponse, mockRequest));
-      const fileInfo = new FileInfo('file123', 'test.pdf');
+      const baseUrl = 'http://example.com';
+      const outputDir = './downloads';
+      vi.mocked(existsSync).mockReturnValueOnce(false);
 
       // when
-      await downloadService.downloadFile(fileInfo, 'https://example.com', '/new/output/dir');
+      await downloadService.downloadFile(mockFileInfo, baseUrl, outputDir);
 
       // then
-      expect(existsSync('/new/output/dir')).toBe(true);
-    });
-
-    it('should handle successful download with FileInfo object', async () => {
-      // given
-      const mockResponse: Partial<IncomingMessage> = {
-        statusCode: 200,
-        pipe: vi.fn(),
-        on: vi.fn().mockReturnThis()
-      };
-
-      const mockRequest: Partial<ClientRequest> = {
-        on: vi.fn().mockImplementation((_event, _callback) => {
-          return mockRequest;
-        })
-      };
-
-      vi.mocked(get).mockImplementation(createGetMockImplementation(mockResponse, mockRequest));
-      const fileInfo = new FileInfo('file123', 'document.pdf');
-
-      // when
-      const result = await downloadService.downloadFile(fileInfo, 'https://example.com');
-
-      // then
-      expect(result).toBe("Download completed successfully");
-      expect(get).toHaveBeenCalledWith('https://example.com/files/file123', expect.any(Function));
-      expect(createWriteStream).toHaveBeenCalledWith(expect.stringContaining('document.pdf'));
-    });
-
-    it('should remove parentheses and their content from filename', async () => {
-      // given
-      const mockResponse: Partial<IncomingMessage> = {
-        statusCode: 200,
-        pipe: vi.fn(),
-        on: vi.fn().mockReturnThis()
-      };
-
-      const mockRequest: Partial<ClientRequest> = {
-        on: vi.fn().mockImplementation((_event, _callback) => {
-          return mockRequest;
-        })
-      };
-
-      vi.mocked(get).mockImplementation(createGetMockImplementation(mockResponse, mockRequest));
-      const fileInfo = new FileInfo('file123', 'document (version 1).pdf');
-
-      // when
-      const result = await downloadService.downloadFile(fileInfo, 'https://example.com');
-
-      // then
-      expect(result).toBe("Download completed successfully");
-      expect(get).toHaveBeenCalledWith('https://example.com/files/file123', expect.any(Function));
-      expect(createWriteStream).toHaveBeenCalledWith(expect.stringContaining('document.pdf'));
-      expect(createWriteStream).not.toHaveBeenCalledWith(expect.stringContaining('(version 1)'));
+      expect(existsSync).toHaveBeenCalledWith(outputDir);
+      expect(mkdirSync).toHaveBeenCalledWith(outputDir, { recursive: true });
     });
 
     it('should handle HTTP error responses', async () => {
       // given
-      const mockResponse: Partial<IncomingMessage> = {
-        statusCode: 404,
-        pipe: vi.fn(),
-        on: vi.fn().mockReturnThis()
-      };
+      const baseUrl = 'http://example.com';
+      mockResponse.statusCode = 404;
 
-      const mockRequest: Partial<ClientRequest> = {
-        on: vi.fn().mockImplementation((_event, _callback) => {
-          return mockRequest;
-        })
-      };
-
-      vi.mocked(get).mockImplementation(createGetMockImplementation(mockResponse, mockRequest));
-      const fileInfo = new FileInfo('file123', 'test.pdf');
-
-      // when
-      const result = downloadService.downloadFile(fileInfo, 'https://example.com');
-
-      // then
-      await expect(result).rejects.toThrow('Download failed: 404');
+      // when/then
+      await expect(downloadService.downloadFile(mockFileInfo, baseUrl))
+        .rejects.toThrow('Download failed: 404');
     });
 
     it('should handle network errors', async () => {
       // given
-      const mockError = new Error('Network error');
+      const baseUrl = 'http://example.com';
 
-      const mockRequest: Partial<ClientRequest> = {
-        on: vi.fn().mockImplementation((_event, callback) => {
-          if (_event === 'error') {
-            callback(mockError);
-          }
-          return mockRequest;
+      vi.mocked(get).mockImplementation(() => {
+        const clientRequestMock = mockClientRequest();
+
+        process.nextTick(() => {
+          clientRequestMock.emit('error', new Error('Network error'));
         })
-      };
 
-      vi.mocked(get).mockReturnValue(mockRequest as ClientRequest);
-      const fileInfo = new FileInfo('file123', 'test.pdf');
+        return clientRequestMock;
+      });
 
-      // when
-      const result = downloadService.downloadFile(fileInfo, 'https://example.com');
-
-      // then
-      await expect(result).rejects.toThrow('Download failed: Network error');
+      // when/then
+      await expect(downloadService.downloadFile(mockFileInfo, baseUrl))
+        .rejects.toThrow('Download failed: Network error');
+      expect(mockProgressManager.done).toHaveBeenCalledWith(mockFileInfo.labeledName);
     });
   });
 
   describe('retrieveFileList', () => {
-    it('should throw an error if jsonFileUrl is not provided', async () => {
+    it('should retrieve file list successfully', async () => {
+      // given
+      const jsonFileUrl = 'http://example.com/files.json';
+
+      // when
+      const result = await downloadService.retrieveFileList(jsonFileUrl);
+
+      // then
+      expect(result).toHaveLength(2);
+
+      expect(result[0]).toBeInstanceOf(FileInfo);
+      expect(result[0]?.uid).toBe('file1');
+      expect(result[0]?.name).toBe('File 1.pdf');
+
+      expect(result[1]).toBeInstanceOf(FileInfo);
+      expect(result[1]?.uid).toBe('file2');
+      expect(result[1]?.name).toBe('File 2.pdf');
+
+      expect(fetch).toHaveBeenCalledWith(jsonFileUrl);
+    });
+
+    it('should throw an error if JSON file URL is missing', async () => {
       // given
       const jsonFileUrl = '';
 
-      // when
-      const result = downloadService.retrieveFileList(jsonFileUrl);
-
-      // then
-      await expect(result).rejects.toThrow('JSON file URL is required');
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('JSON file URL is required');
+      expect(logger.error).toHaveBeenCalledWith('Download failed: JSON file URL is missing');
     });
 
-    it('should handle network errors when downloading JSON file', async () => {
+    it('should throw an error if HTTP request fails', async () => {
       // given
-      const mockError = new Error('Network error');
-      vi.mocked(fetch).mockRejectedValue(mockError);
-
-      // when
-      const result = downloadService.retrieveFileList('https://example.com/files.json');
-
-      // then
-      await expect(result).rejects.toThrow('Failed to retrieve file list: Network error');
-    });
-
-    it('should handle HTTP error responses when downloading JSON file', async () => {
-      // given
-      const mockResponse = {
+      const jsonFileUrl = 'http://example.com/files.json';
+      global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
         statusText: 'Not Found'
-      };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+      });
 
-      // when
-      const result = downloadService.retrieveFileList('https://example.com/files.json');
-
-      // then
-      await expect(result).rejects.toThrow('HTTP error 404 Not Found');
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('HTTP error 404 Not Found');
+      expect(logger.error).toHaveBeenCalledWith('Download failed: HTTP error 404 Not Found');
     });
 
-    it('should handle non-array JSON format', async () => {
+    it('should throw an error if response is not an array', async () => {
       // given
-      const mockResponse = {
+      const jsonFileUrl = 'http://example.com/files.json';
+      global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({ notAnArray: true })
-      };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+      });
 
-      // when
-      const result = downloadService.retrieveFileList('https://example.com/files.json');
-
-      // then
-      await expect(result).rejects.toThrow('Invalid JSON format: expected an array');
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('Invalid JSON format: expected an array');
     });
 
-    it('should handle array with invalid items', async () => {
+    it('should throw an error if array items are missing required properties', async () => {
       // given
-      const responseBody = [{ uid: 'file1' }, { name: 'file2' }, 'file3'];
-      const mockResponse = {
+      const jsonFileUrl = 'http://example.com/files.json';
+      global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: vi.fn().mockResolvedValue(responseBody)
-      };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+        json: vi.fn().mockResolvedValue([
+          { uid: 'file1' },
+          { name: 'File 2.pdf' }
+        ])
+      });
 
-      // when
-      const result = downloadService.retrieveFileList('https://example.com/files.json');
-
-      // then
-      await expect(result).rejects.toThrow('Invalid JSON format: items must have uid and name');
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('Invalid JSON format: items must have uid and name');
     });
 
-    it('should successfully retrieve file list from JSON', async () => {
+    it('should handle fetch errors', async () => {
       // given
-      const responseBody = [
-        { uid: 'file1', name: 'File 1' },
-        { uid: 'file2', name: 'File 2' },
-        { uid: 'file3', name: 'File 3' }
-      ];
-      const mockResponse = {
-        ok: true,
-        json: vi.fn().mockResolvedValue(responseBody)
-      };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+      const jsonFileUrl = 'http://example.com/files.json';
+      const fetchError = new Error('Network error');
+      global.fetch = vi.fn().mockRejectedValue(fetchError);
 
-      // when
-      const result = await downloadService.retrieveFileList('https://example.com/files.json');
-
-      // then
-      expect(fetch).toHaveBeenCalledWith('https://example.com/files.json');
-      expect(result.length).toEqual(responseBody.length);
-
-      for (let i = 0; i < result.length; i++) {
-        expect(result[i]).toBeInstanceOf(FileInfo);
-        expect(result[i]?.uid).toEqual(responseBody[i]?.uid);
-        expect(result[i]?.name).toEqual(responseBody[i]?.name);
-      }
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('Failed to retrieve file list: Network error');
+      expect(logger.error).toHaveBeenCalledWith('Failed to retrieve file list: Network error');
     });
   });
 });

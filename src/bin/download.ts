@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import commandLineArgs from 'command-line-args';
-import downloadManager from '../managers/download-manager.js';
+import DownloadManager from "../managers/download-manager.js";
+import ProgressManager from "../managers/progress-manager.js";
+import DownloadService from "../services/download.service.js";
 import logger from '../utils/logger.js';
 
 export const optionDefinitions = [
@@ -14,9 +16,11 @@ export const optionDefinitions = [
 export function displayHelp() {
   console.log('Usage: gs-download [options]');
   console.log('Options:');
+
   optionDefinitions.forEach(option => {
     console.log(`  --${option.name}, -${option.alias}\t${option.description} (default: ${option.defaultValue})`);
   });
+
   return true;
 }
 
@@ -36,6 +40,10 @@ export async function executeDownload(options: commandLineArgs.CommandLineOption
     logger.info(`JSON file URL: ${jsonFileUrl}`);
     logger.info(`Target directory: ${targetDir}`);
 
+    const progressManager = new ProgressManager();
+    const downloadService = new DownloadService(progressManager);
+    const downloadManager = new DownloadManager(progressManager, downloadService);
+
     const downloadedFiles = await downloadManager.downloadFilesFromJson(jsonFileUrl, baseUrl, targetDir);
 
     if (downloadedFiles.length === 0) {
@@ -52,7 +60,11 @@ export async function executeDownload(options: commandLineArgs.CommandLineOption
   }
 }
 
-if (process.argv[1] === import.meta.url || process.argv[1]?.endsWith('/gs-download') || process.argv[1]?.endsWith('\\gs-download.cmd')) {
+if (
+  process.argv[1] === import.meta.url
+  || process.argv[1]?.endsWith('/gs-download')
+  || process.argv[1]?.endsWith('\\gs-download.cmd')
+) {
   const options = commandLineArgs(optionDefinitions);
 
   executeDownload(options)

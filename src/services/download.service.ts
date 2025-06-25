@@ -1,10 +1,13 @@
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { get } from "node:http";
 import { join } from 'path';
-import { FileInfo } from '../models/file-info.model.js';
+import ProgressManager from '../managers/progress-manager.js';
+import FileInfo from '../models/file-info.model.js';
 import logger from '../utils/logger.js';
 
-export class DownloadService {
+export default class DownloadService {
+  constructor(private progressManager: ProgressManager) {}
+
   async downloadFile(fileInfo: FileInfo, baseUrl: string, outputDir = '.'): Promise<string> {
     if (!fileInfo.uid) {
       const error = new Error('File UID is required');
@@ -36,22 +39,40 @@ export class DownloadService {
     logger.info('Initiating download request');
 
     return new Promise((resolve, reject) => {
+      let contentLength = 0;
+
       get(downloadUrl, (response) => {
         if (response.statusCode !== 200) {
           reject(new Error(`Download failed: ${response.statusCode}`));
           return;
         }
 
+        contentLength = parseInt(response.headers['content-length'] || '0', 10);
+
+        if (contentLength > 0) {
+          this.progressManager.create(fileInfo.labeledName, contentLength);
+        }
+
         const fileStream = createWriteStream(outputFilePath);
+
+        response.on('data', (chunk) => {
+          this.progressManager.update(fileInfo.labeledName, chunk.length);
+        });
 
         response.pipe(fileStream);
 
         fileStream.on('finish', () => {
           fileStream.close();
-          resolve("Download completed successfully");
+
+          this.progressManager.update(fileInfo.labeledName, contentLength);
+          this.progressManager.done(fileInfo.labeledName);
+
+          resolve(outputFilePath);
         });
       })
-      .on('error', (err) => { reject(new Error(`Download failed: ${err.message}`) );
+      .on('error', (err) => { 
+        this.progressManager.done(fileInfo.labeledName);
+        reject(new Error(`Download failed: ${err.message}`));
       });
     });
   }
@@ -97,5 +118,3 @@ export class DownloadService {
     }
   }
 }
-
-export default new DownloadService();
