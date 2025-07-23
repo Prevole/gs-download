@@ -8,7 +8,7 @@ export default defineConfig({
     coverage: {
       provider: 'istanbul',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts'],
+      exclude: ['src/**/*.d.ts', 'src/**/__mocks__/**'],
       thresholds: {
         global: {
           statements: 90,

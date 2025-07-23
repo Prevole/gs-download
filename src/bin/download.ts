@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import {fileURLToPath} from "node:url";
+
 import commandLineArgs from 'command-line-args';
 import DownloadManager from "../managers/download-manager.js";
 import ProgressManager from "../managers/progress-manager.js";
@@ -61,7 +63,7 @@ export async function executeDownload(options: commandLineArgs.CommandLineOption
 }
 
 if (
-  process.argv[1] === import.meta.url
+  process.argv[1] === fileURLToPath(import.meta.url)
   || process.argv[1]?.endsWith('/gs-download')
   || process.argv[1]?.endsWith('\\gs-download.cmd')
 ) {

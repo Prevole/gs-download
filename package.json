@@ -9,6 +9,7 @@
     "gs-download": "dist/bin/download.js"
   },
   "scripts": {
+    "clean": "rm -rf dist && rm tsconfig.tsbuildinfo",
     "build": "tsc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

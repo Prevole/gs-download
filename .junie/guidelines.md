@@ -45,3 +45,16 @@ This project follows a specific structure to maintain consistency and clarity:
 - Run `npm run lint` to check for style issues
 - Import statements should be expanded and not use wildcard (*) imports
   - Example: Use `import { Component1, Component2 } from 'module'` instead of `import * as Module from 'module'`
+
+### Readme.md
+
+- Project structure section must contains:
+  - src folder
+  - first level folders in src folder
+  - project configuration files
+- Project structure must not contain:
+  - dist folder
+  - node_modules folder
+  - .junie folder
+  - .idea folder
+  - README.md file

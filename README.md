@@ -4,7 +4,8 @@ A TypeScript application for downloading Genius Scan PDF files.
 
 ## Description
 
-This application allows you to download files from a Genius Scan server. It uses command-line arguments to specify the host, port, and target directory for downloads.
+This application allows you to download files from a Genius Scan server. It uses command-line arguments to specify the 
+host, port, and target directory for downloads.
 
 ## Installation
 
@@ -22,12 +23,24 @@ npm run build
 
 ## Usage
 
+### Dev Only
+
 ```bash
+# Install the module (dev only) globally
+npm install -g .
+
 # Using the CLI
 gs-download --host <hostname> --port <port> --target <download-directory>
 
 # Or with short options
 gs-download -h <hostname> -p <port> -t <download-directory>
+
+# OR
+
+dist/bin/download.js --host <hostname> --port <port> --target <download-directory>
+
+# Or with short options
+dist/bin/download.js -h <hostname> -p <port> -t <download-directory>
 ```
 
 ### Options
@@ -38,28 +51,24 @@ gs-download -h <hostname> -p <port> -t <download-directory>
 
 ## Development
 
-This project uses TypeScript for type safety and Jest for testing.
-
-### Available Scripts
-
-- `npm run build`: Compiles TypeScript to JavaScript
-- `npm run dev`: Runs the application using ts-node (no compilation needed)
-- `npm test`: Runs the test suite
-- `npm run test:coverage`: Runs the test suite with coverage report
-- `npm run lint`: Lints the codebase
+This project uses TypeScript for type safety and Vitest for testing.
 
 ## Project Structure
 
 ```
 gs-download/
-├── dist/               # Compiled JavaScript files
 ├── src/                # TypeScript source files
 │   ├── bin/            # CLI executable
-│   ├── __tests__/      # Test files
-│   └── index.ts        # Main application code
+│   ├── managers/       # Business logic managers
+│   ├── models/         # Data models
+│   ├── services/       # Service layer
+│   ├── test/           # Test utilities
+│   └── utils/          # Utility functions
+├── eslint.config.js    # ESLint configuration
 ├── package.json        # Project metadata and dependencies
 ├── tsconfig.json       # TypeScript configuration
-└── README.md           # This file
+├── tsconfig.eslint.json # TypeScript configuration for ESLint
+└── vitest.config.ts    # Vitest testing configuration
 ```
 
 ## Testing
