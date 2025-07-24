@@ -24,7 +24,11 @@ jobs:
           node-version: 22.x
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
 
       - name: Semantic Release
         env:
