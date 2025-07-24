@@ -1,0 +1,44 @@
+name: Trigger Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Create release-temp branch
+        run: |
+          git fetch origin main
+          git checkout -b release-temp origin/main
+          git push -f origin release-temp
+
+      - name: Create PR to main
+        uses: peter-evans/create-pull-request@v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: release-temp
+          title: "chore: release"
+          body: "Auto-generated release PR from main"
+          labels: auto-merge
+          commit-message: "chore: prepare release"
+          delete-branch: false
+          draft: false
+
+      - name: Enable auto-merge
+        run: gh pr merge --merge --auto $(gh pr view --json number -q .number)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
