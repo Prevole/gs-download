@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - release-temp
+      - main
 
 permissions:
   contents: write
@@ -19,6 +19,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Create release-temp branch
+        run: |
+          git fetch origin main
+          git checkout -b release-temp origin/main
+          git push -f origin release-temp
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
@@ -31,3 +42,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
+
+      - name: Create PR to main
+        uses: peter-evans/create-pull-request@v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: release-temp
+          title: "chore: release"
+          body: "Auto-generated release PR from main"
+          labels: auto-merge
+          commit-message: "chore: prepare release"
+          delete-branch: false
+          draft: false
+
+      - name: Enable auto-merge
+        run: gh pr merge --merge --auto $(gh pr view --json number -q .number)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
