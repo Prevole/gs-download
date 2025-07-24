@@ -8,6 +8,9 @@
   "bin": {
     "gs-download": "dist/bin/download.js"
   },
+  "publishConfig": {
+    "provenance": true
+  },
   "scripts": {
     "clean": "rm -rf dist && rm tsconfig.tsbuildinfo",
     "build": "tsc",
@@ -32,8 +35,6 @@
     "save": "^2.9.0"
   },
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.3",
     "@types/cli-progress": "^3.11.0",
     "@types/command-line-args": "^5.2.3",
