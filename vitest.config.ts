@@ -7,8 +7,13 @@ export default defineConfig({
     clearMocks: true,
     coverage: {
       provider: 'istanbul',
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts', 'src/**/__mocks__/**'],
+      include: [
+        'src/**/*.ts'
+      ],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/**/__mocks__/**'
+      ],
       thresholds: {
         global: {
           statements: 90,
