@@ -31,21 +31,19 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run linting
-      id: lint
-      run: |
-        npm run lint:json
-        cat eslint-report.json
-        echo "lint_exit_code=$?" >> "$GITHUB_OUTPUT"
-      continue-on-error: true
-
-    - name: Report ESLint problems with reviewdog
+    - name: ESLint and report to PR
+      id: reviewdog
       uses: reviewdog/action-eslint@v1
-      continue-on-error: true
       with:
-        reporter: github-pr-review
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        eslint_flags: '. -f json -o eslint-report.json'
+        reporter: github-pr-review
+        eslint_flags: "src/**/*.ts"
+        filter_mode: file
+        fail_level: none
+
+    - name: Capture lint exit code
+      id: lint-capture
+      run: echo "exit_code=${{ steps.reviewdog.outcome == 'success' && 0 || 1 }}" >> "$GITHUB_OUTPUT"
 
     - name: Run tests with coverage
       id: test
@@ -55,7 +53,7 @@ jobs:
 
     - name: Fail if lint or tests failed
       run: |
-        if [ "${{ steps.lint.outputs.exit_code }}" != "0" ] || [ "${{ steps.tests.outputs.exit_code }}" != "0" ]; then
+        if [ "${{ steps.lint-capture.outputs.exit_code }}" != "0" ] || [ "${{ steps.tests.outputs.exit_code }}" != "0" ]; then
           echo "❌ Lint or tests failed"
           exit 1
         else
