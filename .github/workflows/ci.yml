@@ -28,7 +28,7 @@ jobs:
 
     - uses: reviewdog/action-setup@e04ffabe3898a0af8d0fb1af00c188831c4b5893 # v1.3.2
       with:
-        reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
+        reviewdog_version: latest
 
     - name: lint
       id: lint
@@ -39,19 +39,11 @@ jobs:
 
     - name: Publish lint results
       id: reviewdog
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         reviewdog -f=rdjson -reporter=github-check -name="ESLint" -fail-level=any < eslint-report.json
         echo "reviewdog_exit_code=$?" >> "$GITHUB_OUTPUT"
-
-#    - name: ESLint and report to PR
-#      id: reviewdog
-#      uses: reviewdog/action-eslint@v1.33.2
-#      with:
-#        github_token: ${{ secrets.GITHUB_TOKEN }}
-#        reporter: github-check
-#        eslint_flags: 'src/**/*.ts'
-#        filter_mode: file
-#        fail_level: any
 
     - name: Capture lint exit code
       id: lint-capture
