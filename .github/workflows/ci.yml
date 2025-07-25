@@ -1,11 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - release-temp
-
   pull_request:
     branches:
       - main
@@ -36,7 +31,7 @@ jobs:
       uses: reviewdog/action-eslint@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        reporter: github-pr-review
+        reporter: github-check
         eslint_flags: "src/**/*.ts"
         filter_mode: file
         fail_level: none
@@ -46,7 +41,7 @@ jobs:
       run: echo "exit_code=${{ steps.reviewdog.outcome == 'success' && 0 || 1 }}" >> "$GITHUB_OUTPUT"
 
     - name: Run tests with coverage
-      id: test
+      id: tests
       run: |
         npm run test:coverage
         echo "test_exit_code=$?" >> "$GITHUB_OUTPUT"
