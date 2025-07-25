@@ -19,6 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
     "lint": "eslint src/**/*.ts",
+    "lint:json": "eslint src/**/*.ts -f json -o eslint-report.json",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
   "keywords": [
@@ -45,6 +46,7 @@
     "@typescript-eslint/parser": "^8.34.0",
     "@vitest/coverage-istanbul": "^3.2.3",
     "eslint": "^9.28.0",
+    "eslint-formatter-rdjson": "^1.0.6",
     "eslint-plugin-import": "^2.29.1",
     "semantic-release": "^24.2.7",
     "ts-node": "^10.9.2",

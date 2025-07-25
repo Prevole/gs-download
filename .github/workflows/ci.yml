@@ -1,11 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - release-temp
-
   pull_request:
     branches:
       - main
@@ -31,12 +26,42 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run linting
-      run: npm run lint
-      continue-on-error: true
+    - uses: reviewdog/action-setup@e04ffabe3898a0af8d0fb1af00c188831c4b5893 # v1.3.2
+      with:
+        reviewdog_version: latest
+
+    - name: lint
+      id: lint
+      run: |
+        npx eslint . --ext .ts -f rdjson -o eslint-report.json || true
+        echo "lint_exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Publish lint results
+      id: reviewdog
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        reviewdog -f=rdjson -reporter=github-check -name="ESLint" -filter=nofilter -fail-level=any < eslint-report.json
+        echo "reviewdog_exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Capture lint exit code
+      id: lint-capture
+      run: echo "exit_code=${{ steps.reviewdog.outcome == 'success' && 0 || 1 }}" >> "$GITHUB_OUTPUT"
 
     - name: Run tests with coverage
-      run: npm run test:coverage
+      id: tests
+      run: |
+        npm run test:coverage
+        echo "test_exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Fail if lint or tests failed
+      run: |
+        if [ "${{ steps.lint-capture.outputs.exit_code }}" != "0" ] || [ "${{ steps.tests.outputs.exit_code }}" != "0" ]; then
+          echo "❌ Lint or tests failed"
+          exit 1
+        else
+          echo "✅ Lint and tests passed"
+        fi
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
