@@ -35,6 +35,7 @@ jobs:
       id: lint
       run: |
         npm run lint:json
+        cat eslint-report.json
         echo "lint_exit_code=$?" >> "$GITHUB_OUTPUT"
       continue-on-error: true
 
