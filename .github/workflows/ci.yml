@@ -34,12 +34,13 @@ jobs:
       id: lint
       run: |
         npx eslint 'src/**/*.ts' -f rdjson -o eslint-report.json
+        cat eslint-report.json
         echo "lint_exit_code=$?" >> "$GITHUB_OUTPUT"
 
     - name: Publish lint results
       id: reviewdog
       run: |
-        reviewdog -f=rdjson -reporter=github-check -name="ESLint" < eslint-report.json
+        reviewdog -f=rdjson -reporter=github-check -name="ESLint" -fail-level=any < eslint-report.json
         echo "reviewdog_exit_code=$?" >> "$GITHUB_OUTPUT"
 
 #    - name: ESLint and report to PR
