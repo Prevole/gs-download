@@ -1,9 +1,12 @@
 import { vi } from 'vitest';
+
 import DownloadManager from '../managers/download-manager.js';
 import FileInfo from '../models/file-info.model.js';
 import { createMock } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import { optionDefinitions, displayHelp, executeDownload } from './download.js';
+
+// eslint-disable-next-line import/no-namespace
 import * as downloadModule from './download.js';
 
 vi.mock('../utils/logger.js', () => ({

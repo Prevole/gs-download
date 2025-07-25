@@ -39,11 +39,11 @@ export default class DownloadManager {
 
       const downloadedFiles: string[] = [];
 
-      for (let i = 0; i < fileList.length; i++) {
-        const fileInfo = fileList[i];
+      for (const fileInfo of fileList) {
         logger.info(`Processing file: ${fileInfo?.name} (${fileInfo?.uid})`);
+
         try {
-          const filePath = await this.downloadService.downloadFile(fileInfo!, baseUrl, outputDir);
+          const filePath = await this.downloadService.downloadFile(fileInfo, baseUrl, outputDir);
           downloadedFiles.push(filePath);
 
           logger.info(`Successfully downloaded: ${fileInfo?.name}`);
@@ -58,10 +58,13 @@ export default class DownloadManager {
       this.progressManager.stop();
 
       logger.info(`Download process completed. Successfully downloaded ${downloadedFiles.length} of ${fileList.length} files`);
+
       return downloadedFiles;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+
       logger.error(`Download process failed: ${errorMessage}`);
+
       throw error;
     }
   }

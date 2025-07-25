@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {fileURLToPath} from "node:url";
+import { fileURLToPath } from "node:url";
 
 import commandLineArgs from 'command-line-args';
 import DownloadManager from "../managers/download-manager.js";
