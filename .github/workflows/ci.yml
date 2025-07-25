@@ -32,9 +32,9 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         reporter: github-check
-        eslint_flags: "src/**/*.ts"
+        eslint_flags: 'src/**/*.ts'
         filter_mode: file
-        fail_level: none
+        fail_level: any
 
     - name: Capture lint exit code
       id: lint-capture
