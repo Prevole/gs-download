@@ -2,6 +2,7 @@
   "name": "gs-download",
   "version": "0.0.1",
   "description": "Downloader of Genius Scan PDFs files",
+  "repository": "github:Prevole/gs-download",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
