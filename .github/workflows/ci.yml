@@ -32,11 +32,34 @@ jobs:
       run: npm ci
 
     - name: Run linting
-      run: npm run lint
+      id: lint
+      run: |
+        npm run lint:json
+        echo "lint_exit_code=$?" >> "$GITHUB_OUTPUT"
       continue-on-error: true
 
+    - name: Report ESLint problems with reviewdog
+      uses: reviewdog/action-eslint@v1
+      continue-on-error: true
+      with:
+        reporter: github-pr-review
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        eslint_flags: '. -f json -o eslint-report.json'
+
     - name: Run tests with coverage
-      run: npm run test:coverage
+      id: test
+      run: |
+        npm run test:coverage
+        echo "test_exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Fail if lint or tests failed
+      run: |
+        if [ "${{ steps.lint.outputs.exit_code }}" != "0" ] || [ "${{ steps.tests.outputs.exit_code }}" != "0" ]; then
+          echo "❌ Lint or tests failed"
+          exit 1
+        else
+          echo "✅ Lint and tests passed"
+        fi
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
