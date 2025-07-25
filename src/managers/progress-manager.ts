@@ -29,7 +29,10 @@ export default class ProgressManager {
   }
 
   done(name: string) {
-    this.multiBar.remove(this.bars.get(name)!);
+    const bar = this.bars.get(name);
+    if (!bar) return;
+
+    this.multiBar.remove(bar);
     this.bars.delete(name);
   }
 

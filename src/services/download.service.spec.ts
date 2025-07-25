@@ -1,15 +1,20 @@
+import { Buffer } from 'buffer';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { ClientRequest, get} from 'node:http';
+import {ClientRequest, get, IncomingMessage} from 'node:http';
+import { Writable } from "node:stream";
 import { vi } from 'vitest';
+
 import ProgressManager from '../managers/progress-manager.js';
 import FileInfo from '../models/file-info.model.js';
 import { createMock, mockClientRequest, unsafeCast } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import DownloadService from './download.service.js';
 
+declare const global: typeof globalThis;
+
 vi.mock('fs', () => ({
   createWriteStream: vi.fn().mockReturnValue({
-    on: vi.fn().mockImplementation(function(this: any, event, callback) {
+    on: vi.fn().mockImplementation(function(this: Writable, event, callback) {
       if (event === 'finish') {
         callback();
       }
@@ -43,7 +48,7 @@ const mockProgressManager = createMock<ProgressManager>({
 
 describe('DownloadService', () => {
   let downloadService: DownloadService;
-  let mockResponse: any;
+  let mockResponse: Partial<IncomingMessage>;
   let mockFileInfo: FileInfo;
 
   beforeEach(() => {
@@ -68,9 +73,9 @@ describe('DownloadService', () => {
 
     const mockClientRequest = createMock<ClientRequest>();
 
-    vi.mocked(unsafeCast<(url: string | URL, cb: any) => ClientRequest>(get))
+    vi.mocked(unsafeCast<(url: string | URL, cb: (res: IncomingMessage) => void) => ClientRequest>(get))
       .mockImplementation((url: string | URL, callback) => {
-        callback(mockResponse);
+        callback(mockResponse as IncomingMessage);
         return mockClientRequest;
       });
 
