@@ -1,5 +1,7 @@
 import { MultiBar, SingleBar } from 'cli-progress';
+import { injectable } from 'inversify';
 
+@injectable()
 export default class ProgressManager {
   private multiBar: MultiBar;
   private bars: Map<string, SingleBar>;
