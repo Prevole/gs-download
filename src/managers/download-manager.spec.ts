@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
+import 'reflect-metadata';
+
 import FileInfo from '../models/file-info.model.js';
 import DownloadService from '../services/download.service.js';
-import {createMock} from "../test/test-utils.js";
+import {createMock, setupInversifyMocks} from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import DownloadManager from './download-manager.js';
 import ProgressManager from './progress-manager.js';
@@ -17,6 +19,8 @@ const mockMultiBar = {
 vi.mock('cli-progress', () => ({
   MultiBar: vi.fn().mockImplementation(() => mockMultiBar)
 }));
+
+setupInversifyMocks();
 
 const mockProgressManager = createMock<ProgressManager>({
   create: vi.fn(),

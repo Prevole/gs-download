@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
+import 'reflect-metadata';
 import { fileURLToPath } from "node:url";
 
 import commandLineArgs from 'command-line-args';
+import { container } from '../config/container.js';
+import { TYPES } from '../config/types.js';
 import DownloadManager from "../managers/download-manager.js";
-import ProgressManager from "../managers/progress-manager.js";
-import DownloadService from "../services/download.service.js";
 import logger from '../utils/logger.js';
 
 export const optionDefinitions = [
@@ -29,36 +30,31 @@ export function displayHelp() {
 export async function executeDownload(options: commandLineArgs.CommandLineOptions) {
   if (options.help) {
     displayHelp();
-    return { success: true, files: [] };
+    return true;
   }
 
-  const baseUrl = `http://${options.host}:${options.port}`;
-  const jsonFileUrl = `${baseUrl}/files`;
-  const targetDir = options.target;
-
   try {
-    logger.info('Starting download process');
-    logger.info(`Base URL: ${baseUrl}`);
-    logger.info(`JSON file URL: ${jsonFileUrl}`);
-    logger.info(`Target directory: ${targetDir}`);
+    const host = options.host as string;
+    const port = options.port as number;
+    const target = options.target as string;
 
-    const progressManager = new ProgressManager();
-    const downloadService = new DownloadService(progressManager);
-    const downloadManager = new DownloadManager(progressManager, downloadService);
+    const baseUrl = `http://${host}:${port}`;
+    const jsonFileUrl = `${baseUrl}/files`;
 
-    const downloadedFiles = await downloadManager.downloadFilesFromJson(jsonFileUrl, baseUrl, targetDir);
+    logger.info(`Connecting to ${host}:${port}`);
+    logger.info(`Target directory: ${target}`);
 
-    if (downloadedFiles.length === 0) {
-      logger.warn('No files were downloaded');
-    } else {
-      logger.info(`Successfully downloaded ${downloadedFiles.length} files to ${targetDir}`);
-    }
+    const downloadManager = container.get<DownloadManager>(TYPES.DownloadManager);
 
-    return { success: true, files: downloadedFiles };
+    const downloadedFiles = await downloadManager.downloadFilesFromJson(jsonFileUrl, baseUrl, target);
+
+    logger.info(`Download completed. ${downloadedFiles.length} files downloaded.`);
+
+    return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(`Download process failed: ${errorMessage}`);
-    return { success: false, error: errorMessage };
+    logger.error(`Download failed: ${errorMessage}`);
+    return false;
   }
 }
 
@@ -71,7 +67,7 @@ if (
 
   executeDownload(options)
     .then(result => {
-      process.exit(result.success ? 0 : 1);
+      process.exit(result ? 0 : 1);
     })
     .catch(error => {
       logger.error(`Unexpected error: ${error}`);
