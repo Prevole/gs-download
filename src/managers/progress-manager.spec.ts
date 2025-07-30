@@ -136,7 +136,7 @@ describe('ProgressManager', () => {
 
       progressManager.create(name, 100);
 
-      vi.clearAllMocks(); // Clear mocks after create
+      vi.clearAllMocks();
 
       // when
       progressManager.done(name);

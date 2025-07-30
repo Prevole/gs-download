@@ -3,9 +3,9 @@
 import { fileURLToPath } from "node:url";
 
 import commandLineArgs from 'command-line-args';
+import { container } from '../config/container.js';
+import { TYPES } from '../config/types.js';
 import DownloadManager from "../managers/download-manager.js";
-import ProgressManager from "../managers/progress-manager.js";
-import DownloadService from "../services/download.service.js";
 import logger from '../utils/logger.js';
 
 export const optionDefinitions = [
@@ -42,9 +42,7 @@ export async function executeDownload(options: commandLineArgs.CommandLineOption
     logger.info(`JSON file URL: ${jsonFileUrl}`);
     logger.info(`Target directory: ${targetDir}`);
 
-    const progressManager = new ProgressManager();
-    const downloadService = new DownloadService(progressManager);
-    const downloadManager = new DownloadManager(progressManager, downloadService);
+    const downloadManager = container.get<DownloadManager>(TYPES.DownloadManager);
 
     const downloadedFiles = await downloadManager.downloadFilesFromJson(jsonFileUrl, baseUrl, targetDir);
 

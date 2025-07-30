@@ -1,7 +1,6 @@
 import { vi } from 'vitest';
 import FileInfo from '../models/file-info.model.js';
 import DownloadService from '../services/download.service.js';
-import {createMock} from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import DownloadManager from './download-manager.js';
 import ProgressManager from './progress-manager.js';
@@ -18,18 +17,6 @@ vi.mock('cli-progress', () => ({
   MultiBar: vi.fn().mockImplementation(() => mockMultiBar)
 }));
 
-const mockProgressManager = createMock<ProgressManager>({
-  create: vi.fn(),
-  update: vi.fn(),
-  stop: vi.fn(),
-  done: vi.fn()
-});
-
-const mockDownloadService = createMock<DownloadService>({
-  retrieveFileList: vi.fn(),
-  downloadFile: vi.fn()
-});
-
 vi.mock('../utils/logger.js', () => ({
   default: {
     info: vi.fn(),
@@ -38,12 +25,35 @@ vi.mock('../utils/logger.js', () => ({
   }
 }));
 
+// Mock ProgressManager - no type casting needed!
+vi.mock('./progress-manager.js', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    create: vi.fn(),
+    update: vi.fn(),
+    done: vi.fn(),
+    stop: vi.fn()
+  }))
+}));
+
+// Mock DownloadService - Vitest handles typing automatically!
+vi.mock('../services/download.service.js', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    retrieveFileList: vi.fn().mockResolvedValue([]),
+    downloadFile: vi.fn().mockResolvedValue('test-path.pdf')
+  }))
+}));
+
 describe('DownloadManager', () => {
   let downloadManager: DownloadManager;
+  let mockProgressManager: ProgressManager;
+  let mockDownloadService: DownloadService;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Direct instantiation - no type casting needed thanks to module mocks!
+    mockProgressManager = new ProgressManager();
+    mockDownloadService = new DownloadService(mockProgressManager);
     downloadManager = new DownloadManager(mockProgressManager, mockDownloadService);
   });
 
