@@ -1,12 +1,15 @@
+import { inject, injectable } from 'inversify';
+import { TYPES } from '../config/types.js';
 import FileInfo from '../models/file-info.model.js';
 import DownloadService from '../services/download.service.js';
 import logger from '../utils/logger.js';
 import ProgressManager from './progress-manager.js';
 
+@injectable()
 export default class DownloadManager {
   constructor(
-    private progressManager: ProgressManager,
-    private downloadService: DownloadService
+    @inject(TYPES.ProgressManager) private progressManager: ProgressManager,
+    @inject(TYPES.DownloadService) private downloadService: DownloadService
   ) {}
 
   async downloadFilesFromJson(jsonFileUrl: string, baseUrl: string, outputDir = '.'): Promise<string[]> {
