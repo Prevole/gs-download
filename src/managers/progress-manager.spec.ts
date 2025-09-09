@@ -1,6 +1,10 @@
 import { MultiBar } from 'cli-progress';
 import { vi } from 'vitest';
+import 'reflect-metadata';
+import { setupInversifyMocks } from '../test/test-utils.js';
 import ProgressManager from './progress-manager.js';
+
+setupInversifyMocks();
 
 const mockSingleBar = {
   increment: vi.fn(),

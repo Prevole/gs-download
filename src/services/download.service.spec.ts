@@ -3,14 +3,17 @@ import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import {ClientRequest, get, IncomingMessage} from 'node:http';
 import { Writable } from "node:stream";
 import { vi } from 'vitest';
+import 'reflect-metadata';
 
 import ProgressManager from '../managers/progress-manager.js';
 import FileInfo from '../models/file-info.model.js';
-import { createMock, mockClientRequest, unsafeCast } from "../test/test-utils.js";
+import { createMock, mockClientRequest, unsafeCast, setupInversifyMocks } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import DownloadService from './download.service.js';
 
 declare const global: typeof globalThis;
+
+setupInversifyMocks();
 
 vi.mock('fs', () => ({
   createWriteStream: vi.fn().mockReturnValue({

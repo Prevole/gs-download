@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
+import 'reflect-metadata';
 
+import { container } from '../config/container.js';
+import { TYPES } from '../config/types.js';
 import DownloadManager from '../managers/download-manager.js';
-import FileInfo from '../models/file-info.model.js';
 import { createMock } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import { optionDefinitions, displayHelp, executeDownload } from './download.js';
@@ -17,14 +19,11 @@ vi.mock('../utils/logger.js', () => ({
   }
 }));
 
-vi.mock('../managers/download-manager.js', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    downloadFilesFromJson: vi.fn()
-  }))
+vi.mock('../config/container.js', () => ({
+  container: {
+    get: vi.fn()
+  }
 }));
-
-vi.mock('../managers/progress-manager.js');
-vi.mock('../services/download.service.js');
 
 const originalConsoleLog = console.log;
 console.log = vi.fn();
@@ -39,7 +38,12 @@ describe('download', () => {
       downloadFilesFromJson: vi.fn()
     });
 
-    vi.mocked(DownloadManager).mockImplementation(() => mockDownloadManager);
+    vi.mocked(container.get).mockImplementation((serviceIdentifier) => {
+      if (serviceIdentifier === TYPES.DownloadManager) {
+        return mockDownloadManager;
+      }
+      return {};
+    });
 
     vi.spyOn(downloadModule, 'displayHelp');
   });
@@ -107,7 +111,7 @@ describe('download', () => {
   });
 
   describe('executeDownload', () => {
-    it('should display help and return success when help option is true', async () => {
+    it('should display help and return true when help option is true', async () => {
       // given
       const options = { help: true };
 
@@ -115,9 +119,9 @@ describe('download', () => {
       const result = await executeDownload(options);
 
       // then
-      expect(result).toEqual({ success: true, files: [] });
+      expect(result).toBe(true);
       expect(console.log).toHaveBeenCalledWith('Usage: gs-download [options]');
-      expect(DownloadManager).not.toHaveBeenCalled();
+      expect(container.get).not.toHaveBeenCalled();
     });
 
     it('should download files successfully', async () => {
@@ -128,22 +132,16 @@ describe('download', () => {
         target: '/downloads'
       };
 
-      const mockFiles = [
-        new FileInfo('file1', 'file1.pdf'),
-        new FileInfo('file2', 'file2.pdf')
-      ];
-
+      const mockFiles = ['/path/file1.pdf', '/path/file2.pdf'];
       mockDownloadManager.downloadFilesFromJson = vi.fn().mockResolvedValue(mockFiles);
 
       // when
       const result = await executeDownload(options);
 
       // then
-      expect(result).toEqual({ success: true, files: mockFiles });
+      expect(result).toBe(true);
 
-      expect(logger.info).toHaveBeenCalledWith('Starting download process');
-      expect(logger.info).toHaveBeenCalledWith('Base URL: http://example.com:9000');
-      expect(logger.info).toHaveBeenCalledWith('JSON file URL: http://example.com:9000/files');
+      expect(logger.info).toHaveBeenCalledWith('Connecting to example.com:9000');
       expect(logger.info).toHaveBeenCalledWith('Target directory: /downloads');
 
       expect(mockDownloadManager.downloadFilesFromJson).toHaveBeenCalledWith(
@@ -152,25 +150,7 @@ describe('download', () => {
         '/downloads'
       );
 
-      expect(logger.info).toHaveBeenCalledWith('Successfully downloaded 2 files to /downloads');
-    });
-
-    it('should log a warning when no files are downloaded', async () => {
-      // given
-      const options = {
-        host: 'example.com',
-        port: 9000,
-        target: '/downloads'
-      };
-
-      mockDownloadManager.downloadFilesFromJson = vi.fn().mockResolvedValue([]);
-
-      // when
-      const result = await executeDownload(options);
-
-      // then
-      expect(result).toEqual({ success: true, files: [] });
-      expect(logger.warn).toHaveBeenCalledWith('No files were downloaded');
+      expect(logger.info).toHaveBeenCalledWith('Download completed. 2 files downloaded.');
     });
 
     it('should handle errors during download', async () => {
@@ -188,8 +168,8 @@ describe('download', () => {
       const result = await executeDownload(options);
 
       // then
-      expect(result).toEqual({ success: false, error: 'Download failed' });
-      expect(logger.error).toHaveBeenCalledWith('Download process failed: Download failed');
+      expect(result).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith('Download failed: Download failed');
     });
 
     it('should handle non-Error objects thrown during download', async () => {
@@ -206,8 +186,8 @@ describe('download', () => {
       const result = await executeDownload(options);
 
       // then
-      expect(result).toEqual({ success: false, error: 'String error' });
-      expect(logger.error).toHaveBeenCalledWith('Download process failed: String error');
+      expect(result).toBe(false);
+      expect(logger.error).toHaveBeenCalledWith('Download failed: String error');
     });
   });
 });
