@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 
 import DownloadManager from '../managers/download-manager.js';
 import FileInfo from '../models/file-info.model.js';
+import { createMock } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
 import { optionDefinitions, displayHelp, executeDownload } from './download.js';
 
@@ -16,34 +17,14 @@ vi.mock('../utils/logger.js', () => ({
   }
 }));
 
-// Mock all dependencies so we can instantiate without type casting
-vi.mock('../managers/progress-manager.js', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    create: vi.fn(),
-    update: vi.fn(),
-    done: vi.fn(),
-    stop: vi.fn()
-  }))
-}));
-
-vi.mock('../services/download.service.js', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    retrieveFileList: vi.fn(),
-    downloadFile: vi.fn()
-  }))
-}));
-
 vi.mock('../managers/download-manager.js', () => ({
   default: vi.fn().mockImplementation(() => ({
-    downloadFilesFromJson: vi.fn().mockResolvedValue([])
+    downloadFilesFromJson: vi.fn()
   }))
 }));
 
-vi.mock('../config/container.js', () => ({
-  container: {
-    get: vi.fn()
-  }
-}));
+vi.mock('../managers/progress-manager.js');
+vi.mock('../services/download.service.js');
 
 const originalConsoleLog = console.log;
 console.log = vi.fn();
@@ -51,15 +32,14 @@ console.log = vi.fn();
 describe('download', () => {
   let mockDownloadManager: DownloadManager;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    
-    const mockProgressManager = new (await import('../managers/progress-manager.js')).default();
-    const mockDownloadService = new (await import('../services/download.service.js')).default(mockProgressManager);
-    mockDownloadManager = new (await import('../managers/download-manager.js')).default(mockProgressManager, mockDownloadService);
 
-    const { container } = await import('../config/container.js');
-    vi.mocked(container.get).mockReturnValue(mockDownloadManager);
+    mockDownloadManager = createMock<DownloadManager>({
+      downloadFilesFromJson: vi.fn()
+    });
+
+    vi.mocked(DownloadManager).mockImplementation(() => mockDownloadManager);
 
     vi.spyOn(downloadModule, 'displayHelp');
   });
@@ -137,8 +117,7 @@ describe('download', () => {
       // then
       expect(result).toEqual({ success: true, files: [] });
       expect(console.log).toHaveBeenCalledWith('Usage: gs-download [options]');
-      const { container } = await import('../config/container.js');
-      expect(container.get).not.toHaveBeenCalled();
+      expect(DownloadManager).not.toHaveBeenCalled();
     });
 
     it('should download files successfully', async () => {

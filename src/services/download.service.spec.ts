@@ -40,21 +40,19 @@ vi.mock('../utils/logger.js', () => ({
   }
 }));
 
+const mockProgressManager = createMock<ProgressManager>({
+  create: vi.fn(),
+  update: vi.fn(),
+  done: vi.fn()
+})
+
 describe('DownloadService', () => {
   let downloadService: DownloadService;
-  let mockProgressManager: ProgressManager;
   let mockResponse: Partial<IncomingMessage>;
   let mockFileInfo: FileInfo;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockProgressManager = {
-      create: vi.fn(),
-      update: vi.fn(),
-      done: vi.fn(),
-      stop: vi.fn()
-    } as unknown as ProgressManager;
 
     downloadService = new DownloadService(mockProgressManager);
 

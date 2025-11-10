@@ -1,15 +1,12 @@
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { get } from "node:http";
 import { join } from 'path';
-import { inject, injectable } from 'inversify';
-import { TYPES } from '../config/types.js';
 import ProgressManager from '../managers/progress-manager.js';
 import FileInfo from '../models/file-info.model.js';
 import logger from '../utils/logger.js';
 
-@injectable()
 export default class DownloadService {
-  constructor(@inject(TYPES.ProgressManager) private progressManager: ProgressManager) {}
+  constructor(private progressManager: ProgressManager) {}
 
   async downloadFile(fileInfo: FileInfo, baseUrl: string, outputDir = '.'): Promise<string> {
     if (!fileInfo.uid) {
