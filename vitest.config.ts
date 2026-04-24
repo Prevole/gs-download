@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     clearMocks: true,
+    include: ['src/**/*.spec.ts'],
     coverage: {
       provider: 'istanbul',
       include: [

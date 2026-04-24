@@ -170,6 +170,33 @@ describe('DownloadService', () => {
         .rejects.toThrow('Download failed: Network error');
       expect(mockProgressManager.done).toHaveBeenCalledWith(mockFileInfo.labeledName);
     });
+    it('should not create a progress bar if content-length is 0', async () => {
+      // given
+      const baseUrl = 'http://example.com';
+      const outputDir = './downloads';
+
+      mockResponse.headers = { 'content-length': '0' };
+
+      // when
+      await downloadService.downloadFile(mockFileInfo, baseUrl, outputDir);
+
+      // then
+      expect(mockProgressManager.create).not.toHaveBeenCalled();
+    });
+
+    it('should not create a progress bar if content-length header is absent', async () => {
+      // given
+      const baseUrl = 'http://example.com';
+      const outputDir = './downloads';
+
+      mockResponse.headers = {};
+
+      // when
+      await downloadService.downloadFile(mockFileInfo, baseUrl, outputDir);
+
+      // then
+      expect(mockProgressManager.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('retrieveFileList', () => {
@@ -258,6 +285,17 @@ describe('DownloadService', () => {
       await expect(downloadService.retrieveFileList(jsonFileUrl))
         .rejects.toThrow('Failed to retrieve file list: Network error');
       expect(logger.error).toHaveBeenCalledWith('Failed to retrieve file list: Network error');
+    });
+
+    it('should handle non-Error thrown values', async () => {
+      // given
+      const jsonFileUrl = 'http://example.com/files.json';
+      global.fetch = vi.fn().mockRejectedValue('string error');
+
+      // when/then
+      await expect(downloadService.retrieveFileList(jsonFileUrl))
+        .rejects.toThrow('Failed to retrieve file list: string error');
+      expect(logger.error).toHaveBeenCalledWith('Failed to retrieve file list: string error');
     });
   });
 });
