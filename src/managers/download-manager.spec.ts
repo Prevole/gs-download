@@ -258,5 +258,16 @@ describe('DownloadManager', () => {
       expect(logger.info).toHaveBeenCalledWith(`Processing file: File 3 (file3)`);
       expect(logger.info).toHaveBeenCalledWith(`Successfully downloaded: File 3`);
     });
+    it('should handle non-Error objects thrown during file list retrieval', async () => {
+      // given
+      vi.mocked(mockDownloadService.retrieveFileList).mockRejectedValue('string error');
+
+      // when
+      const result = downloadManager.downloadFilesFromJson(jsonFileUrl, baseUrl, outputDir);
+
+      // then
+      await expect(result).rejects.toThrow('string error');
+      expect(logger.error).toHaveBeenCalledWith('Download process failed: string error');
+    });
   });
 });

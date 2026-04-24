@@ -14,12 +14,13 @@ const mockMultiBar = {
 };
 
 vi.mock('cli-progress', () => ({
-  MultiBar: vi.fn().mockImplementation(() => mockMultiBar)
+  MultiBar: vi.fn()
 }));
 
 describe('ProgressManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(MultiBar).mockImplementation(function() { return mockMultiBar as unknown as MultiBar; });
   });
 
   describe('constructor', () => {
@@ -147,6 +148,15 @@ describe('ProgressManager', () => {
       // Verify the bar is removed from the map by trying to update it
       progressManager.update(name);
       expect(mockSingleBar.increment).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing if the bar does not exist', () => {
+      // given
+      const progressManager = new ProgressManager();
+
+      // when / then (no error thrown)
+      expect(() => progressManager.done('nonexistent')).not.toThrow();
+      expect(mockMultiBar.remove).not.toHaveBeenCalled();
     });
   });
 

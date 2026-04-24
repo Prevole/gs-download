@@ -18,9 +18,9 @@ vi.mock('../utils/logger.js', () => ({
 }));
 
 vi.mock('../managers/download-manager.js', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    downloadFilesFromJson: vi.fn()
-  }))
+  default: vi.fn().mockImplementation(function() {
+    return { downloadFilesFromJson: vi.fn() };
+  })
 }));
 
 vi.mock('../managers/progress-manager.js');
@@ -39,7 +39,7 @@ describe('download', () => {
       downloadFilesFromJson: vi.fn()
     });
 
-    vi.mocked(DownloadManager).mockImplementation(() => mockDownloadManager);
+    vi.mocked(DownloadManager).mockImplementation(function() { return mockDownloadManager; } as unknown as typeof DownloadManager);
 
     vi.spyOn(downloadModule, 'displayHelp');
   });

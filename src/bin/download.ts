@@ -73,7 +73,7 @@ if (
     .then(result => {
       process.exit(result.success ? 0 : 1);
     })
-    .catch(error => {
+    .catch(/* istanbul ignore next */ error => {
       logger.error(`Unexpected error: ${error}`);
       process.exit(1);
     });
