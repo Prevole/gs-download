@@ -31,6 +31,7 @@ gs-download [options]
 | `--port` | `-p` | `8080` | Port number of the Genius Scan server |
 | `--target` | `-t` | `.` | Target directory for downloaded files |
 | `--help` | `-h` | | Display help message |
+| `--version` | | | Display the version number |
 
 ### Examples
 
@@ -47,6 +48,9 @@ gs-download
 # Display help
 gs-download --help
 gs-download -h
+
+# Display version
+gs-download --version
 ```
 
 ## Development
