@@ -9,10 +9,10 @@ import DownloadService from "../services/download.service.js";
 import logger from '../utils/logger.js';
 
 export const optionDefinitions = [
-  { name: 'host', alias: 'h', type: String, defaultValue: 'localhost', description: 'Host name or IP address' },
+  { name: 'host', alias: 'H', type: String, defaultValue: 'localhost', description: 'Host name or IP address' },
   { name: 'port', alias: 'p', type: Number, defaultValue: 8080, description: 'Port number' },
   { name: 'target', alias: 't', type: String, defaultValue: '.', description: 'Target directory for downloaded files' },
-  { name: 'help', alias: '?', type: Boolean, defaultValue: false, description: 'Display this help message' }
+  { name: 'help', alias: 'h', type: Boolean, defaultValue: false, description: 'Display this help message' }
 ];
 
 export function displayHelp() {
