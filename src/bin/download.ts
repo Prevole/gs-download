@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 import commandLineArgs from 'command-line-args';
@@ -8,25 +9,41 @@ import ProgressManager from "../managers/progress-manager.js";
 import DownloadService from "../services/download.service.js";
 import logger from '../utils/logger.js';
 
+const require = createRequire(import.meta.url);
+const { version } = require('../../package.json') as { version: string };
+
 export const optionDefinitions = [
   { name: 'host', alias: 'H', type: String, defaultValue: 'localhost', description: 'Host name or IP address' },
   { name: 'port', alias: 'p', type: Number, defaultValue: 8080, description: 'Port number' },
   { name: 'target', alias: 't', type: String, defaultValue: '.', description: 'Target directory for downloaded files' },
-  { name: 'help', alias: 'h', type: Boolean, defaultValue: false, description: 'Display this help message' }
+  { name: 'help', alias: 'h', type: Boolean, defaultValue: false, description: 'Display this help message' },
+  { name: 'version', type: Boolean, defaultValue: false, description: 'Display the version number' }
 ];
 
+export function displayVersion() {
+  console.log(`gs-download v${version}`);
+  return true;
+}
+
 export function displayHelp() {
+  console.log(`gs-download v${version}`);
   console.log('Usage: gs-download [options]');
   console.log('Options:');
 
   optionDefinitions.forEach(option => {
-    console.log(`  --${option.name}, -${option.alias}\t${option.description} (default: ${option.defaultValue})`);
+    const aliasStr = option.alias ? `, -${option.alias}` : '        ';
+    console.log(`  --${option.name}${aliasStr}\t${option.description} (default: ${option.defaultValue})`);
   });
 
   return true;
 }
 
 export async function executeDownload(options: commandLineArgs.CommandLineOptions) {
+  if (options.version) {
+    displayVersion();
+    return { success: true, files: [] };
+  }
+
   if (options.help) {
     displayHelp();
     return { success: true, files: [] };

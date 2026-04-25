@@ -4,7 +4,7 @@ import DownloadManager from '../managers/download-manager.js';
 import FileInfo from '../models/file-info.model.js';
 import { createMock } from "../test/test-utils.js";
 import logger from '../utils/logger.js';
-import { optionDefinitions, displayHelp, executeDownload } from './download.js';
+import { optionDefinitions, displayHelp, displayVersion, executeDownload } from './download.js';
 
 // eslint-disable-next-line import/no-namespace
 import * as downloadModule from './download.js';
@@ -54,7 +54,7 @@ describe('download', () => {
       const options = optionDefinitions;
 
       // then
-      expect(options).toHaveLength(4);
+      expect(options).toHaveLength(5);
 
       const hostOption = options.find(opt => opt.name === 'host');
       expect(hostOption).toBeDefined();
@@ -79,6 +79,12 @@ describe('download', () => {
       expect(helpOption?.alias).toBe('h');
       expect(helpOption?.type).toBe(Boolean);
       expect(helpOption?.defaultValue).toBe(false);
+
+      const versionOption = options.find(opt => opt.name === 'version');
+      expect(versionOption).toBeDefined();
+      expect(versionOption?.alias).toBeUndefined();
+      expect(versionOption?.type).toBe(Boolean);
+      expect(versionOption?.defaultValue).toBe(false);
     });
   });
 
@@ -93,9 +99,15 @@ describe('download', () => {
       expect(console.log).toHaveBeenCalledWith('Options:');
 
       optionDefinitions.forEach(option => {
-        expect(console.log).toHaveBeenCalledWith(
-          expect.stringContaining(`--${option.name}, -${option.alias}`)
-        );
+        if (option.alias) {
+          expect(console.log).toHaveBeenCalledWith(
+            expect.stringContaining(`--${option.name}, -${option.alias}`)
+          );
+        } else {
+          expect(console.log).toHaveBeenCalledWith(
+            expect.stringContaining(`--${option.name}`)
+          );
+        }
         expect(console.log).toHaveBeenCalledWith(
           expect.stringContaining(option.description)
         );
@@ -106,7 +118,31 @@ describe('download', () => {
     });
   });
 
+  describe('displayVersion', () => {
+    it('should display the version number', () => {
+      // given/when
+      const result = displayVersion();
+
+      // then
+      expect(result).toBe(true);
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/^gs-download v\d+\.\d+\.\d+$/));
+    });
+  });
+
   describe('executeDownload', () => {
+    it('should display version and return success when version option is true', async () => {
+      // given
+      const options = { version: true };
+
+      // when
+      const result = await executeDownload(options);
+
+      // then
+      expect(result).toEqual({ success: true, files: [] });
+      expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/^gs-download v\d+\.\d+\.\d+$/));
+      expect(DownloadManager).not.toHaveBeenCalled();
+    });
+
     it('should display help and return success when help option is true', async () => {
       // given
       const options = { help: true };
