@@ -1,85 +1,116 @@
 # gs-download
 
-A TypeScript application for downloading Genius Scan PDF files.
+A TypeScript CLI application for downloading Genius Scan PDF files.
 
 ## Description
 
-This application allows you to download files from a Genius Scan server. It uses command-line arguments to specify the 
-host, port, and target directory for downloads.
+`gs-download` connects to a Genius Scan server and downloads PDF files to a local directory. It displays real-time
+progress bars for each file being downloaded and logs activity to a rolling log file.
+
+## Requirements
+
+- Node.js >= 25
 
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/gs-download.git
-cd gs-download
-
-# Install dependencies
-npm install
-
-# Build the application
-npm run build
+npm install -g gs-download
 ```
 
 ## Usage
 
-### Dev Only
-
 ```bash
-# Install the module (dev only) globally
-npm install -g .
-
-# Using the CLI
-gs-download --host <hostname> --port <port> --target <download-directory>
-
-# Or with short options
-gs-download -h <hostname> -p <port> -t <download-directory>
-
-# OR
-
-dist/bin/download.js --host <hostname> --port <port> --target <download-directory>
-
-# Or with short options
-dist/bin/download.js -h <hostname> -p <port> -t <download-directory>
+gs-download [options]
 ```
 
 ### Options
 
-- `--host`, `-h`: The hostname of the Genius Scan server
-- `--port`, `-p`: The port number of the Genius Scan server
-- `--target`, `-t`: The directory where files will be downloaded
+| Option | Alias | Default | Description |
+|---|---|---|---|
+| `--host` | `-H` | `localhost` | Host name or IP address of the Genius Scan server |
+| `--port` | `-p` | `8080` | Port number of the Genius Scan server |
+| `--target` | `-t` | `.` | Target directory for downloaded files |
+| `--help` | `-h` | | Display help message |
+
+### Examples
+
+```bash
+# Download from a remote server
+gs-download --host 192.168.1.10 --port 8080 --target ~/Downloads/scans
+
+# Short options (-H for host, -p for port, -t for target)
+gs-download -H 192.168.1.10 -p 8080 -t ~/Downloads/scans
+
+# Use defaults (localhost:8080, current directory)
+gs-download
+
+# Display help
+gs-download --help
+gs-download -h
+```
 
 ## Development
 
-This project uses TypeScript for type safety and Vitest for testing.
+### Prerequisites
 
-## Project Structure
+- Node.js >= 25
+- npm
+
+### Setup
+
+```bash
+git clone https://github.com/Prevole/gs-download.git
+cd gs-download
+npm install
+npm run build
+```
+
+### Local install
+
+```bash
+npm install -g .
+gs-download --host <hostname> --port <port> --target <directory>
+```
+
+### Scripts
+
+| Script | Description |
+|---|---|
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run clean` | Remove `dist/` and build cache |
+| `npm test` | Run unit tests |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Lint source files |
+| `npm run lint:fix` | Lint and auto-fix source files |
+
+### Project Structure
 
 ```
 gs-download/
-├── src/                # TypeScript source files
-│   ├── bin/            # CLI executable
-│   ├── managers/       # Business logic managers
+├── src/
+│   ├── bin/            # CLI entry point
+│   ├── managers/       # Download and progress managers
 │   ├── models/         # Data models
-│   ├── services/       # Service layer
+│   ├── services/       # Download service (HTTP)
 │   ├── test/           # Test utilities
-│   └── utils/          # Utility functions
-├── eslint.config.js    # ESLint configuration
-├── package.json        # Project metadata and dependencies
-├── tsconfig.json       # TypeScript configuration
-├── tsconfig.eslint.json # TypeScript configuration for ESLint
-└── vitest.config.ts    # Vitest testing configuration
+│   └── utils/          # Logger
+├── eslint.config.js
+├── package.json
+├── release.config.js   # Semantic Release configuration
+├── tsconfig.json
+└── vitest.config.ts
 ```
 
-## Testing
+### Testing
 
-The application has full unit test coverage. Run the tests with:
+The project has 100% test coverage. Run the tests with:
 
 ```bash
 npm test
 ```
 
-Or generate a coverage report with:
+Generate a coverage report with:
 
 ```bash
 npm run test:coverage

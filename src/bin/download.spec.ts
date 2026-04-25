@@ -58,7 +58,7 @@ describe('download', () => {
 
       const hostOption = options.find(opt => opt.name === 'host');
       expect(hostOption).toBeDefined();
-      expect(hostOption?.alias).toBe('h');
+      expect(hostOption?.alias).toBe('H');
       expect(hostOption?.type).toBe(String);
       expect(hostOption?.defaultValue).toBe('localhost');
 
@@ -76,7 +76,7 @@ describe('download', () => {
 
       const helpOption = options.find(opt => opt.name === 'help');
       expect(helpOption).toBeDefined();
-      expect(helpOption?.alias).toBe('?');
+      expect(helpOption?.alias).toBe('h');
       expect(helpOption?.type).toBe(Boolean);
       expect(helpOption?.defaultValue).toBe(false);
     });
