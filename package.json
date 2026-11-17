@@ -29,30 +29,31 @@
   "author": "Prevole",
   "license": "MIT",
   "engines": {
-    "node": ">=25"
+    "node": ">=26.13"
   },
   "dependencies": {
     "cli-progress": "^3.12.0",
-    "command-line-args": "^6.0.1",
-    "pino": "^10.3.1",
+    "command-line-args": "^6.0.2",
+    "pino": "^10.4.0",
     "pino-roll": "^4.0.0",
     "save": "^2.9.0"
   },
   "devDependencies": {
-    "@semantic-release/github": "^12.0.6",
-    "@types/cli-progress": "^3.11.0",
+    "@eslint/js": "^10.0.1",
+    "@semantic-release/github": "^12.0.11",
+    "@types/cli-progress": "^3.11.6",
     "@types/command-line-args": "^5.2.3",
-    "@types/node": "^26.5.0",
-    "@types/request": "^2.48.12",
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "@vitest/coverage-istanbul": "^4.1.5",
-    "eslint": "^9.28.0",
+    "@types/node": "^26.6.6",
+    "@types/request": "^2.48.13",
+    "@typescript-eslint/eslint-plugin": "^8.73.0",
+    "@typescript-eslint/parser": "^8.73.0",
+    "@vitest/coverage-istanbul": "^5.1.0",
+    "eslint": "^10.15.0",
     "eslint-formatter-rdjson": "^1.0.6",
-    "eslint-plugin-import": "^2.29.1",
-    "semantic-release": "^25.0.3",
+    "eslint-plugin-import-x": "^4.18.1",
+    "semantic-release": "^26.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^5.1.0"
   }
 }

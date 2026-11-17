@@ -114,7 +114,7 @@ export default class DownloadService {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error(`Failed to retrieve file list: ${message}`);
-      throw new Error(`Failed to retrieve file list: ${message}`);
+      throw new Error(`Failed to retrieve file list: ${message}`, { cause: err });
     }
   }
 }
